@@ -63,6 +63,9 @@ public class TestSpongeColoredData {
                 if (item.isPresent()) {
                     if (item.get().offer(Keys.COLOR, c).getType() == Type.SUCCESS) {
                         src.sendMessage(Texts.of("SUCCESS"));
+                        // deserialize for lols
+                        Color successColor = item.get().get(Keys.COLOR).get();
+                        src.sendMessage(Texts.of("Look at the nice color: " + Integer.toHexString(successColor.getRGB())));
                         return CommandResult.success();
                     } else {
                         src.sendMessage(Texts.of("LOL FAIL, tried to apply color " + c + " to " + item.get()));
