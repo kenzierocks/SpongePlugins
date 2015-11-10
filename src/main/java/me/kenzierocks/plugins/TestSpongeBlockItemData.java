@@ -94,22 +94,31 @@ public class TestSpongeBlockItemData {
             if (src instanceof ArmorEquipable) {
                 Optional<ItemStack> item = ((ArmorEquipable) src).getItemInHand();
                 if (item.isPresent()) {
-                    Optional<BlockState> stateOpt = item.get().get(Keys.ITEM_BLOCKSTATE);
+                    ItemStack stack = item.get();
+                    Optional<BlockState> stateOpt = stack.get(Keys.ITEM_BLOCKSTATE);
                     if (!stateOpt.isPresent()) {
                         src.sendMessage(Texts.of("Missing state!"));
                         return CommandResult.empty();
                     }
                     BlockState state = stateOpt.get().copy();
-                    BlockTrait<?> trait = state.getTraits().iterator().next();
+                    BlockTrait<?> trait = randomFromIterator(state.getTraits()).get();
                     Optional<?> val = randomFromIterator(trait.getPossibleValues());
                     if (val.isPresent()) {
-                        state.withTrait(trait, val.get());
-                        if (item.get().offer(Keys.ITEM_BLOCKSTATE, state).getType() == Type.SUCCESS) {
-                            src.sendMessage(Texts.of("SUCCESS"));
-                            return CommandResult.success();
+                        state = state.withTrait(trait, val.get()).get();
+                        if (stack.offer(Keys.ITEM_BLOCKSTATE, state).getType() == Type.SUCCESS) {
+                            src.sendMessage(Texts.of("SUCCESS BY KEYS, state=", state.toString(), "stuff=", val.get()));
                         } else {
-                            src.sendMessage(Texts.of("LOL FAIL, tried to randomize property on " + item.get()));
+                            src.sendMessage(Texts.of("LOL FAIL, tried to randomize property on " + stack));
                         }
+                        BlockItemData manipulator = item.get().get(BlockItemData.class).get();
+                        manipulator.set(Keys.ITEM_BLOCKSTATE, state);
+                        if (stack.offer(manipulator).getType() == Type.SUCCESS) {
+                            src.sendMessage(Texts.of("SUCCESS BY MANIPULATOR, state=", state.toString(), "stuff=", val.get()));
+                        } else {
+                            src.sendMessage(Texts.of("LOL FAIL, tried to randomize property on " + stack));
+                        }
+                        ((ArmorEquipable) src).setItemInHand(stack);
+                        return CommandResult.success();
                     } else {
                         src.sendMessage(Texts.of("LOL FAIL, no trait to randomize!"));
                     }
@@ -122,7 +131,7 @@ public class TestSpongeBlockItemData {
             return CommandResult.empty();
         }
 
-        private Optional<?> randomFromIterator(Collection<?> possibleValues) {
+        private <T> Optional<T> randomFromIterator(Collection<T> possibleValues) {
             return Optional.ofNullable(FluentIterable.from(possibleValues).skip(RANDOM.nextInt(possibleValues.size())).first().orNull());
         }
 
